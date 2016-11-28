@@ -240,7 +240,7 @@ export <%= container['name'] %>_workdir="--workdir=<%= container['workdir'] %>"
 <% if container['dockerfile'] %>
 # Dockerfile
 mkdir -p "${CONTAINERS_CONF_DIR}"/<%= container['name'] %>
-cat > "${CONTAINERS_CONF_DIR}"/<%= container['name'] %>/Dockerfile <<DOCKERFILE
+cat > "${CONTAINERS_CONF_DIR}"/<%= container['name'] %>/Dockerfile <<'DOCKERFILE'
 <%= container['dockerfile'] %>
 DOCKERFILE
 <% end %>
