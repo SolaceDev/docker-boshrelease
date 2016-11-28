@@ -16,7 +16,7 @@ case $1 in
 
     # Stop and remove previously Docker Container if exists
     ${DOCKER_COMMAND} stop ${container_name} || true
-    ${DOCKER_COMMAND} rm ${container_name} || true
+    # ${DOCKER_COMMAND} rm ${container_name} || true
 
     # Create Container persistent disk path
     if [ ! -d ${CONTAINERS_STORE_DIR}/${container_name} ]; then
@@ -24,8 +24,9 @@ case $1 in
       chmod 777 ${CONTAINERS_STORE_DIR}/${container_name}
     fi
 
-    # Build the Docker image from Dockerfile
-    if [ -a "${CONTAINERS_CONF_DIR}/${container_name}/Dockerfile" ]; then
+    if [ -z "`${DOCKER_COMMAND} ps -qa`" ]; then
+      # Build the Docker image from Dockerfile
+      if [ -a "${CONTAINERS_CONF_DIR}/${container_name}/Dockerfile" ]; then
         image=$(${DOCKER_COMMAND} images | grep "$(eval echo "\$${container_name}_image")") || true
 
         if [ ! -z "${image}" ]; then
@@ -36,6 +37,7 @@ case $1 in
             build -t "$(eval echo "\$${container_name}_image")" ${CONTAINERS_CONF_DIR}/${container_name} \
             >>${LOG_DIR}/${OUTPUT_LABEL}.stdout.log \
             2>>${LOG_DIR}/${OUTPUT_LABEL}.stderr.log
+      fi
     fi
 
     # Start Docker container
@@ -86,10 +88,15 @@ case $1 in
       "$(eval echo "\$${container_name}_image")" \
       "$(eval echo "\$${container_name}_command")" \
     "
-    echo "$(date) Running Docker command with options: ${docker_options}"
-    ${DOCKER_COMMAND}  ${docker_options} \
-        >>${LOG_DIR}/${OUTPUT_LABEL}.stdout.log \
-        2>>${LOG_DIR}/${OUTPUT_LABEL}.stderr.log
+
+    if [ -z "`${DOCKER_COMMAND} ps -qa`" ]; then
+      echo "$(date) Running Docker command with options: ${docker_options}"
+      ${DOCKER_COMMAND}  ${docker_options} \
+          >>${LOG_DIR}/${OUTPUT_LABEL}.stdout.log \
+          2>>${LOG_DIR}/${OUTPUT_LABEL}.stderr.log
+    else
+      ${DOCKER_COMMAND} start ${container_name}
+    fi
 
     # Grab Container process pid
     pid_process=$(${DOCKER_COMMAND} inspect -f '{{ .State.Pid }}' ${container_name})
@@ -99,7 +106,7 @@ case $1 in
   stop)
     # Stop and remove Docker Container
     ${DOCKER_COMMAND} stop ${container_name} || true
-    ${DOCKER_COMMAND} rm ${container_name} || true
+    # ${DOCKER_COMMAND} rm ${container_name} || true
     ;;
 
   *)
